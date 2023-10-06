@@ -4,48 +4,56 @@
 #include <string.h>
 #include <malloc.h>
 #include <conio.h>
+#include <cctype>
+#include <Windows.h>
 
 #define LENNAME 100
 #define LENDATE 15
 #define LENINDUSTRY 25
 #define NUMBER 1000
+#define MAXCONTINENTS 6
+#define MAXCOUNTRIES 55
+#define MAXSUBJECTS 85
+
+
+int numberOfContinentsEntered = 0;
 
 struct Сontinent
 {
     char *nameOfContinent;
     int numberOfCountries;
-    char **listOfCountries;
     int squareOfContinent;
-};
+    struct Country *listOfCountries;
+} listOfContinents[MAXCONTINENTS];
 
 struct Country
 {
     char *nameOfCountry;
     int numberOfSubject;
-    char **listOfSubject;
     int netProfitCountryEnterprises;
     int populationOfCountry;
     int squareOfCountry;
     int incomeOfCountry;
     int expensesOfCountry;
     int budgetDeficitOrSurplusOfCountry;
+    struct Subject *listOfSubjects;
 };
 
 struct Subject
 {
     char *nameOfSubject;
-    char **listOfCities;
     int numberOfCities;
     int populationOfSubject;
     int squareOfSubject;
+    struct City *listOfCities;
 };
 
 struct City
 {
     char *nameOfCity;
-    char **listOfEnterprises;
     int populationOfCity;
     int numberOfEnterprises;
+    struct Enterprise *listOfEnterprises;
 };
 
 struct Enterprise
@@ -64,11 +72,13 @@ void initializationCountry(Country* pointerCountry);
 void initializationSubject(Subject* pointerSubject);
 void initializationCity(City* pointerCity);
 void initializationEnterprise(Enterprise* pointerEnterprise);
-void initializationContinent(Сontinent* pointerContinent, int number, int square, char *name, char *countries[]);
-void initializationCountry(Country* pointerCountry,int budget, int expenses, int income, int profitEnterprises, int number, int population, int square, char *name, char *subjects[]);
-void initializationSubject(Subject* pointerSubject, int population, int square, int number, char * name, char *cities[]);
-void initializationCity(City* pointerCity, int population, int number, char *name, char *enterprises[]);
-void initializationEnterprise(Enterprise* pointerEnterprise, int profit, int turnover, char * address, char *date, char *industry, char *name);
+void initializationContinent(Сontinent* pointerContinent, int number, int square, char *name, Country countries[], int n);
+void initializationCountry(Country* pointerCountry,int budget, int expenses, int income, int profitEnterprises, int number, int population, int square, char *name, Subject subjects[], int n);
+void initializationSubject(Subject* pointerSubject, int population, int square, int number, char * name, City cities[], int n);
+void initializationCity(City* pointerCity, int population, int number, char *name, Enterprise enterprises[], int n);
+void initializationEnterprise(Enterprise* pointerEnterprise, int profit, int turnover, char *address, char* date, char* industry, char* name);
+void initializationAllStructures(Сontinent* pointerContinent);
+void inputAllStructures(Сontinent continent, Country country, Subject subject, City city, Enterprise enterprise);
 struct Сontinent inputСontinentFromConsole();
 struct Country inputCountryFromConsole();
 struct Subject inputSubjectFromConsole();
@@ -76,11 +86,9 @@ struct City inputCityFromConsole();
 struct Enterprise inputEnterpriseFromConsole();
 
 
-void deletingNewlineTransitionCharacter(char* line) {
-    int lineLength;
-    lineLength = strlen(line);
-    line[lineLength - 1] = '\0';
-}
+void deletingNewlineTransitionCharacter(char* line);
+int protectionAgainstIncorrectTextInput(char* line);
+int checkingForCorrectnessOfDateEntry(char* date);
 
 
 
@@ -90,127 +98,198 @@ struct Subject theSubject;
 struct City theCity;
 struct Enterprise theEnterprise;
 
-struct Сontinent continents[6];
-struct Country countries[55];
-struct Subject subjects[85];
-struct City cities[1000];
-struct Enterprise enterprises[1000];
-
-
-
+ 
 
 int main()
 {
-    
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "Rus");
+    initializationAllStructures(&listOfContinents[0]);
+}
+
+
+
+void deletingNewlineTransitionCharacter(char* line) {
+    int lineLength;
+    lineLength = strlen(line);
+    line[lineLength - 1] = '\0';
+}
+
+int protectionAgainstIncorrectTextInput(char* line) {
+    int i, lineLength;
+    if (line[0] == '\n') {
+        puts("Ошибка! Данное поле не может быть пустым!");
+        return 1;
+    }
+    lineLength = strlen(line);
+    if (line[lineLength - 1] != '\n') {
+        puts("Ошибка! Количество символов превышает допустимое зачение!");
+        return 2;
+    }
+    for (i = 0; i < lineLength; i++)
+        if ((!ispunct(line[i])) && (!isspace(line[i])))
+            return 0;
+    puts("Ошибка! В данном поле должны присутвовать буквы или цифры!");
+    return 3;
+}
+
+int checkingForCorrectnessOfDateEntry(char* date) {
+    int i, flag;
+    flag = 0;
+    if ((!isdigit(date[0])) || (!isdigit(date[1]))) {
+        puts("Число введено некорректно!");
+        flag = 1;
+    }
+    if ((date[2] != '.') || (date[5]) != '.') {
+        puts("После числа и месяца необходимо поставить точку !!!");
+        flag = 2;
+    }
+    if ((!isdigit(date[4])) || (!isdigit(date[5]))) {
+        puts("Месяц введен некорректно!");
+        flag = 3;
+    }
+    for (i = 6; i < 10; i++) 
+        if (!isdigit(date[i])) {
+            puts("Год введен некорректно!");
+            flag = 4;
+            break;
+        }
+    if (flag)
+        puts("ШАБЛОН ВВОДА ДАТЫ - дд.мм.гггг");
+    date[10] = '\0';
+    return flag;
 }
 
 // Инициализация структур без параметров
 
 void initializationContinent(Сontinent* pointerContinent) {
-    (*pointerContinent).numberOfCountries = 0;
-    (*pointerContinent).squareOfContinent = 0;
-    (*pointerContinent).nameOfContinent = NULL;
-    (*pointerContinent).listOfCountries = NULL;
+    pointerContinent->numberOfCountries = 0;
+    pointerContinent->squareOfContinent = 0;
+    pointerContinent->nameOfContinent = NULL;
+    pointerContinent->listOfCountries = (struct Country*)malloc(sizeof(struct Country));
 }
 
 void initializationCountry(Country* pointerCountry) {
-    (*pointerCountry).budgetDeficitOrSurplusOfCountry = 0;
-    (*pointerCountry).expensesOfCountry = 0;
-    (*pointerCountry).incomeOfCountry = 0;
-    (*pointerCountry).netProfitCountryEnterprises = 0;
-    (*pointerCountry).numberOfSubject = 0;
-    (*pointerCountry).populationOfCountry = 0;
-    (*pointerCountry).squareOfCountry = 0;
-    (*pointerCountry).listOfSubject = NULL;
-    (*pointerCountry).nameOfCountry = NULL;
+    pointerCountry->budgetDeficitOrSurplusOfCountry = 0;
+    pointerCountry->expensesOfCountry = 0;
+    pointerCountry->incomeOfCountry = 0;
+    pointerCountry->netProfitCountryEnterprises = 0;
+    pointerCountry->numberOfSubject = 0;
+    pointerCountry->populationOfCountry = 0;
+    pointerCountry->squareOfCountry = 0;
+    pointerCountry->nameOfCountry = NULL;
+    pointerCountry->listOfSubjects = (struct Subject*)malloc(sizeof(struct Subject));
 }
 
 void initializationSubject(Subject* pointerSubject) {
-    (*pointerSubject).populationOfSubject = 0;
-    (*pointerSubject).squareOfSubject = 0;
-    (*pointerSubject).numberOfCities = 0;
-    (*pointerSubject).nameOfSubject = NULL;
-    (*pointerSubject).listOfCities = NULL;
+    pointerSubject->populationOfSubject = 0;
+    pointerSubject->squareOfSubject = 0;
+    pointerSubject->numberOfCities = 0;
+    pointerSubject->nameOfSubject = NULL;
+    pointerSubject->listOfCities = (struct City*)malloc(sizeof(struct City));
 }
 
 void initializationCity(City* pointerCity) {
-    (*pointerCity).populationOfCity = 0;
-    (*pointerCity).numberOfEnterprises = 0;
-    (*pointerCity).nameOfCity = NULL;
-    (*pointerCity).listOfEnterprises = NULL;
+    pointerCity->populationOfCity = 0;
+    pointerCity->numberOfEnterprises = 0;
+    pointerCity->nameOfCity = NULL;
+    pointerCity->listOfEnterprises = (struct Enterprise*)malloc(sizeof(struct Enterprise));
 }
 
 void initializationEnterprise(Enterprise* pointerEnterprise) {
-    (*pointerEnterprise).netProfitOfEnterprise = 0;
-    (*pointerEnterprise).turnoverPerYear = 0;
-    (*pointerEnterprise).citySubjectCountry = NULL;
-    (*pointerEnterprise).dateOfFoundationEnterprise = NULL;
-    (*pointerEnterprise).industryOfEnterprise = NULL;
-    (*pointerEnterprise).nameOfEnterprise = NULL;
+    pointerEnterprise->netProfitOfEnterprise = 0;
+    pointerEnterprise->turnoverPerYear = 0;
+    pointerEnterprise->citySubjectCountry = NULL;
+    pointerEnterprise->dateOfFoundationEnterprise = NULL;
+    pointerEnterprise->industryOfEnterprise = NULL;
+    pointerEnterprise->nameOfEnterprise = NULL;
 }
 
 
 // Инициализация структур с параметрами
 
-void initializationContinent(Сontinent* pointerContinent, int number, int square, char *name, char *countries[]) {
+void initializationContinent(Сontinent* pointerContinent, int number, int square, char *name, Country countries[]) {
+    int i;
     int lenOfName = strlen(name);
-    (*pointerContinent).nameOfContinent = (char*)calloc(lenOfName, sizeof(char));
-    (*pointerContinent).numberOfCountries = number;
-    (*pointerContinent).squareOfContinent = square;
-    strcpy((*pointerContinent).nameOfContinent, name);
-    (*pointerContinent).listOfCountries = (char**)calloc((*pointerContinent).numberOfCountries, sizeof(char*));
-    for (int i = 0; i < (*pointerContinent).numberOfCountries; i++) 
-        (*pointerContinent).listOfCountries[i] = (char*)calloc(LENNAME, sizeof(char));
-    for (int i = 0; countries[i]; i++)
-        strcpy((*pointerContinent).listOfCountries[i], countries[i]);
+    pointerContinent->nameOfContinent = (char*)calloc(lenOfName, sizeof(char));
+    strcpy(pointerContinent->nameOfContinent, name);
+    pointerContinent->numberOfCountries = number;
+    pointerContinent->squareOfContinent = square;
+    pointerContinent->listOfCountries = (struct Country*)malloc(number * sizeof(struct Country));
+    for (i = 0; i < number; i++)
+        *(pointerContinent->listOfCountries + i) = countries[i];
+
 }
 
-void initializationCountry(Country* pointerCountry, int budget, int expenses, int income, int profitEnterprises, int number, int population, int square, char* name, char *subjects[]) {
-    (*pointerCountry).budgetDeficitOrSurplusOfCountry = budget;
-    (*pointerCountry).expensesOfCountry = expenses;
-    (*pointerCountry).incomeOfCountry = income;
-    (*pointerCountry).netProfitCountryEnterprises = profitEnterprises;
-    (*pointerCountry).numberOfSubject = number;
-    (*pointerCountry).populationOfCountry = population;
-    (*pointerCountry).squareOfCountry = square;
-    strcpy((*pointerCountry).nameOfCountry, name);
-    (*pointerCountry).listOfSubject = (char**)calloc((*pointerCountry).numberOfSubject, sizeof(char));
-    for (int i = 0; i < (*pointerCountry).numberOfSubject; i++)
-        (*pointerCountry).listOfSubject[i] = (char*)calloc(LENNAME, sizeof(char));
-    for (int i = 0; subjects[i]; i++)
-        strcpy((*pointerCountry).listOfSubject[i],subjects[i]);
+void initializationCountry(Country* pointerCountry, int budget, int expenses, int income, int profitEnterprises, int number, int population, int square, char* name, Subject subjects[]) {
+    int i;
+    int lenOfName = strlen(name);
+    pointerCountry->nameOfCountry = (char*)calloc(lenOfName, sizeof(char));
+    strcpy(pointerCountry->nameOfCountry, name);
+    pointerCountry->budgetDeficitOrSurplusOfCountry = budget;
+    pointerCountry->expensesOfCountry = expenses;
+    pointerCountry->incomeOfCountry = income;
+    pointerCountry->netProfitCountryEnterprises = profitEnterprises;
+    pointerCountry->numberOfSubject = number;
+    pointerCountry->populationOfCountry = population;
+    pointerCountry->squareOfCountry = square;
+    pointerCountry->listOfSubjects = (struct Subject*)malloc(number * sizeof(struct Subject));
+    for (i = 0; i < number; i++)
+        *(pointerCountry->listOfSubjects + i) = subjects[i];
 }
 
-void initializationSubject(Subject* pointerSubject, int population, int square, int number, char* name, char *cities[]) {
-    (*pointerSubject).populationOfSubject = population;
-    (*pointerSubject).squareOfSubject = square;
-    (*pointerSubject).numberOfCities = number;
-    strcpy((*pointerSubject).nameOfSubject, name);
-    (*pointerSubject).listOfCities = (char**)calloc((*pointerSubject).numberOfCities, sizeof(char));
-    for (int i = 0; i < (*pointerSubject).numberOfCities; i++)
-        (*pointerSubject).listOfCities[i] = (char*)calloc(LENNAME, sizeof(char));
-    for (int i = 0; cities[i]; i++)
-        strcpy((*pointerSubject).listOfCities[i], cities[i]); 
+void initializationSubject(Subject* pointerSubject, int population, int square, int number, char* name, City cities[]) {
+    int i;
+    int lenOfName = strlen(name);
+    pointerSubject->nameOfSubject = (char*)calloc(lenOfName, sizeof(char));
+    strcpy(pointerSubject->nameOfSubject, name);
+    pointerSubject->populationOfSubject = population;
+    pointerSubject->squareOfSubject = square;
+    pointerSubject->numberOfCities = number;
+    pointerSubject->listOfCities = (struct City*)malloc(number * sizeof(struct City));
+    for (i = 0; i < number; i++)
+        *(pointerSubject->listOfCities + i) = cities[i];
 }
 
-void initializationCity(City* pointerCity, int population, int number, char* name, char *enterprises[]) {
-    (*pointerCity).populationOfCity = population;
-    (*pointerCity).numberOfEnterprises = number;
-    strcpy((*pointerCity).nameOfCity, name);
-    (*pointerCity).listOfEnterprises = (char**)calloc((*pointerCity).numberOfEnterprises, sizeof(char));
-    for (int i = 0; i < (*pointerCity).numberOfEnterprises; i++)
-        (*pointerCity).listOfEnterprises[i] = (char*)calloc(LENNAME, sizeof(char));
-    for (int i = 0; enterprises[i]; i++)
-        strcpy((*pointerCity).listOfEnterprises[i], enterprises[i]);
+void initializationCity(City* pointerCity, int population, int number, char* name, Enterprise enterprises[]) {
+    int i;
+    int lenOfName = strlen(name);
+    pointerCity->nameOfCity = (char*)calloc(lenOfName, sizeof(char));
+    strcpy(pointerCity->nameOfCity, name);
+    pointerCity->populationOfCity = population;
+    pointerCity->numberOfEnterprises = number;
+    pointerCity->listOfEnterprises = (struct Enterprise*)malloc(number * sizeof(struct Enterprise));
+    for (i = 0; i < number; i++)
+        *(pointerCity->listOfEnterprises + i) = enterprises[i];
 }
 
 void initializationEnterprise(Enterprise* pointerEnterprise, int profit, int turnover, char* address, char* date, char* industry, char* name) {
-    (*pointerEnterprise).netProfitOfEnterprise = profit;
-    (*pointerEnterprise).turnoverPerYear = turnover;
-    strcpy((*pointerEnterprise).citySubjectCountry, address);
-    strcpy((*pointerEnterprise).dateOfFoundationEnterprise, date);
-    strcpy((*pointerEnterprise).industryOfEnterprise, industry);
-    strcpy((*pointerEnterprise).nameOfEnterprise, name);
+    int length;
+    length = strlen(name);
+    pointerEnterprise->nameOfEnterprise = (char*)calloc(length, sizeof(char));
+    strcpy(pointerEnterprise->nameOfEnterprise, name);
+    length = strlen(industry);
+    pointerEnterprise->industryOfEnterprise = (char*)calloc(length, sizeof(char));
+    strcpy(pointerEnterprise->industryOfEnterprise, industry);
+    length = strlen(date);
+    pointerEnterprise->dateOfFoundationEnterprise = (char*)calloc(length, sizeof(char));
+    strcpy(pointerEnterprise->dateOfFoundationEnterprise, date);
+    length = strlen(address);
+    strcpy(pointerEnterprise->citySubjectCountry, address);
+    pointerEnterprise->citySubjectCountry = (char*)calloc(length, sizeof(char));
+    pointerEnterprise->netProfitOfEnterprise = profit;
+    pointerEnterprise->turnoverPerYear = turnover;
+}
+
+// Инициализация всех структур без параметров
+void initializationAllStructures(Сontinent* pointerContinent) {
+
+    initializationContinent(pointerContinent);
+    initializationCountry(pointerContinent->listOfCountries);
+    initializationSubject(pointerContinent->listOfCountries->listOfSubjects);
+    initializationCity(pointerContinent->listOfCountries->listOfSubjects->listOfCities);
+    initializationEnterprise(pointerContinent->listOfCountries->listOfSubjects->listOfCities->listOfEnterprises);
 }
 
 // Ввод из консоли
@@ -220,27 +299,21 @@ struct Сontinent inputСontinentFromConsole() {
     char countries[55][LENNAME];
     int square;
     int i, length;
-    puts("Введите название континента:");
-    fgets(name, LENNAME, stdin);
+    do {
+        puts("Введите название континента:");
+        fgets(name, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(name));
     deletingNewlineTransitionCharacter(name);
     puts("Введите количество стран на континенте:");
-    scanf("%d", &number);
-    puts("Введите площадь континента");
-    scanf("%d", &square);
-    puts("Введите список стран\n");
-    theContinent.listOfCountries = (char**)calloc(number, sizeof(char*));
-    for (i = 0; i < number; i++)
-        theContinent.listOfCountries[i] = (char*)calloc(LENNAME, sizeof(char));
-    i = 0;
-    do {
-        puts("Введите название города:");
-        fgets(countries[i], LENNAME, stdin);
-        deletingNewlineTransitionCharacter(countries[i]);
-        puts("Для завершения ввода списка нажмите Esc.");
-        puts("Для продолжения любую другую клавишу.");
-        strcpy(theContinent.listOfCountries[i], countries[i]);
-        i++;
-    } while (_getch() != 27);
+    while (scanf("%d", &number) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите количество стран на континенте:\n");
+    }
+    puts("Введите площадь континента (в кв. км):");
+    while (scanf("%d", &square) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите площадь континента (в кв. км):\n");
+    }
     length = strlen(name);
     theContinent.nameOfContinent = (char*)calloc(length, sizeof(char));
     strcpy(theContinent.nameOfContinent, name);
@@ -261,37 +334,46 @@ struct Country inputCountryFromConsole() {
     int budget;
     int population;
     int i, length;
-    puts("Введите название страны:");
-    fgets(name, LENNAME, stdin);
+    do {
+        puts("Введите название страны:");
+        fgets(name, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(name));
     deletingNewlineTransitionCharacter(name);
     puts("Введите население страны:");
-    scanf("%d", &population);
+    while (scanf("%d", &population) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите население страны:\n");
+    }
     puts("Введите количество субъектов в стране:");
-    scanf("%d", &number);
-    puts("Введите площадь страны");
-    scanf("%d", &square);
+    while (scanf("%d", &number) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите количество субъектов в стране:\n");
+    }
+    puts("Введите площадь страны:");
+    while (scanf("%d", &square) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите площадь страны:\n");
+    }
     puts("Введите прибыль всех предприятий страны:");
-    scanf("%d", &profit);
+    while (scanf("%d", &profit) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите прибыль всех предприятий страны:\n");
+    }
     puts("Введите доход страны:");
-    scanf("%d", &income);
+    while (scanf("%d", &income) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите доход страны:\n");
+    }
     puts("Введите расходы страны:");
-    scanf("%d", &expenses);
+    while (scanf("%d", &expenses) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите расходы страны:\n");
+    }
     puts("Введите дефицит/профицит бюджета страны:");
-    scanf("%d", &budget);
-    puts("Введите список субъектов\n");
-    theCountry.listOfSubject = (char**)calloc(theCountry.numberOfSubject, sizeof(char));
-    for (i = 0; i < number; i++)
-        theCountry.listOfSubject[i] = (char*)calloc(LENNAME, sizeof(char));
-    i = 0;
-    do {
-        puts("Введите название субъекта:");
-        fgets(subjects[i], LENNAME, stdin);
-        deletingNewlineTransitionCharacter(subjects[i]);
-        puts("Для завершения ввода списка нажмите Esc.");
-        puts("Для продолжения любую другую клавишу.");
-        strcpy(theCountry.listOfSubject[i], subjects[i]);
-        i++;
-    } while (_getch() != 27);
+    while (scanf("%d", &budget) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите дефицит/профицит бюджета страны:\n");
+    }
     length = strlen(name);
     theCountry.nameOfCountry = (char*)calloc(length, sizeof(char));
     strcpy(theCountry.nameOfCountry, name);
@@ -312,29 +394,27 @@ struct Subject inputSubjectFromConsole() {
     int square;
     int population;
     int i, length;
-    puts("Введите название субъекта:");
-    fgets(name, LENNAME, stdin);
+    do {
+        puts("Введите название субъекта:");
+        fgets(name, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(name));
     deletingNewlineTransitionCharacter(name);
     puts("Введите население субъекта:");
-    scanf("%d", &population);
+    while (scanf("%d", &population) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите население субъекта:\n");
+    }
     puts("Введите количество городов в субъекте:");
-    scanf("%d", &number);
-    puts("Введите площадь субъекта");
-    scanf("%d", &square);
-    puts("Введите список городов\n");
-    theSubject.listOfCities = (char**)calloc(number, sizeof(char*));
-    for (i = 0; i < number; i++)
-        theSubject.listOfCities[i] = (char*)calloc(LENNAME, sizeof(char));
-    i = 0;
-    do {
-        puts("Введите название города:");
-        fgets(cities[i], LENNAME, stdin);
-        deletingNewlineTransitionCharacter(cities[i]);
-        puts("Для завершения ввода списка нажмите Esc.");
-        puts("Для продолжения любую другую клавишу.");
-        strcpy(theSubject.listOfCities[i], cities[i]);
-        i++;
-    } while (_getch() != 27);
+    while (scanf("%d", &number) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите количество городов в субъекте:\n");
+    }
+    puts("Введите площадь субъекта:");
+    while (scanf("%d", &square) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите площадь субъекта:\n");
+    }
+    while (getchar() != '\n');
     length = strlen(name);
     theSubject.nameOfSubject = (char*)calloc(length, sizeof(char));
     strcpy(theSubject.nameOfSubject, name);
@@ -351,27 +431,21 @@ struct City inputCityFromConsole() {
     char enterprises[1000][LENNAME];
     int population;
     int i, length;
-    puts("Введите название города:");
-    fgets(name, LENNAME, stdin);
+    do {
+        puts("Введите название города:");
+        fgets(name, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(name));
     deletingNewlineTransitionCharacter(name);
     puts("Введите население города:");
-    scanf("%d", &population);
+    while (scanf("%d", &population) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите население города:\n");
+    }
     puts("Введите количество предприятий в городе:");
-    scanf("%d", &number);
-    puts("Введите список предприятий\n");
-    theCity.listOfEnterprises = (char**)calloc(number, sizeof(char*));
-    for (i = 0; i < number; i++)
-        theCity.listOfEnterprises[i] = (char*)calloc(LENNAME, sizeof(char));
-    i = 0;
-    do {
-        puts("Введите название предприятия:");
-        fgets(enterprises[i], LENNAME, stdin);
-        deletingNewlineTransitionCharacter(enterprises[i]);
-        puts("Для завершения ввода списка нажмите Esc.");
-        puts("Для продолжения любую другую клавишу.");
-        strcpy(theCity.listOfEnterprises[i], enterprises[i]);
-        i++;
-    } while (_getch() != 27);
+    while (scanf("%d", &number) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите количество предприятий в городе:\n");
+    }
     length = strlen(name);
     theCity.nameOfCity = (char*)calloc(length, sizeof(char));
     strcpy(theCity.nameOfCity, name);
@@ -388,33 +462,91 @@ struct Enterprise inputEnterpriseFromConsole() {
     char date[15];
     char industry[LENNAME];
     int i, length;
-    puts("Введите название предприятия:");
-    fgets(name, LENNAME, stdin);
+    do {
+        puts("Введите название предприятия:");
+        fgets(name, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(name));
     deletingNewlineTransitionCharacter(name);
-    puts("Введите город, субъект и город в котором находится предприятие:");
-    fgets(address, LENNAME * 3, stdin);
+    do {
+        puts("Введите город, субъект и город в котором находится предприятие:");
+        fgets(address, LENNAME * 3, stdin);
+    } while (protectionAgainstIncorrectTextInput(address));
     deletingNewlineTransitionCharacter(address);
-    puts("Введите дату основания предприятия:");
-    fgets(date, 15, stdin);
+    do {
+        do {
+            puts("Введите дату основания предприятия:");
+            fgets(date, 15, stdin);
+        } while (protectionAgainstIncorrectTextInput(date));
+    } while (checkingForCorrectnessOfDateEntry(date));
     deletingNewlineTransitionCharacter(date);
-    puts("Введите отрасль предприятия:");
-    fgets(industry, LENNAME, stdin);
+    do {
+        puts("Введите отрасль предприятия:");
+        fgets(industry, LENNAME, stdin);
+    } while (protectionAgainstIncorrectTextInput(industry));
     deletingNewlineTransitionCharacter(industry);
-    puts("Введите оборот за год");
-    scanf("%d", &turnover);
-    puts("Введите прибыль предприятия");
-    scanf("%d", &profit);
+    puts("Введите оборот за год:");
+    while (scanf("%d", &turnover) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите оборот за год:\n");
+    }
+    puts("Введите прибыль предприятия:");
+    while (scanf("%d", &profit) != 1) {
+        while (getchar() != '\n');
+        printf("\nОшибка ввода!\nВведите прибыль предприятия:\n");
+    }
     length = strlen(name);
     theEnterprise.nameOfEnterprise = (char*)calloc(length, sizeof(char));
+    strcpy(theEnterprise.nameOfEnterprise, name);
     length = strlen(address);
     theEnterprise.citySubjectCountry = (char*)calloc(length, sizeof(char));
+    strcpy(theEnterprise.citySubjectCountry, address);
     length = strlen(date);
     theEnterprise.dateOfFoundationEnterprise = (char*)calloc(length, sizeof(char));
+    strcpy(theEnterprise.dateOfFoundationEnterprise, date);
     length = strlen(industry);
     theEnterprise.industryOfEnterprise = (char*)calloc(length, sizeof(char));
-    strcpy(theEnterprise.nameOfEnterprise, name);
     strcpy(theEnterprise.industryOfEnterprise, industry);
-    strcpy(theEnterprise.citySubjectCountry, address);
-    strcpy(theEnterprise.dateOfFoundationEnterprise, date);
+    return theEnterprise;
 }
 
+void inputAllStructures(Сontinent continent, Country country, Subject subject, City city, Enterprise enterprise) {
+    int numberOfCountriesEntered = 0;
+    int numberOfSubjectsEntered = 0;
+    if (numberOfContinentsEntered != MAXCONTINENTS)
+        do {
+            continent = inputСontinentFromConsole();
+            numberOfContinentsEntered++;
+            if (numberOfContinentsEntered == MAXCONTINENTS)
+                puts("Вы ввели все существующие континеты!");
+            else {
+                puts("Для завершения ввода континетов нажмите Esc.");
+                puts("Для продолжения любую другую клавишу.\n");
+            }
+        } while ((_getch() != 27) && (numberOfContinentsEntered != MAXCONTINENTS));
+    do {
+        country = inputCountryFromConsole();
+        numberOfCountriesEntered++;
+        if (numberOfCountriesEntered == MAXCOUNTRIES)
+            puts("Вы ввели максимальное количество стан для одного континета!");
+        else {
+            puts("Для завершения ввода стран нажмите Esc.");
+            puts("Для продолжения любую другую клавишу.\n");
+        }
+    } while ((_getch() != 27) && (numberOfCountriesEntered != MAXCOUNTRIES));
+    do {
+        subject = inputSubjectFromConsole();
+        numberOfSubjectsEntered++;
+        if (numberOfSubjectsEntered == MAXSUBJECTS)
+            puts("Вы ввели максимальное количество субъектов для одной страны!");
+        else {
+            puts("Для завершения ввода субъектов нажмите Esc.");
+            puts("Для продолжения любую другую клавишу.\n");
+        }
+    } while ((_getch() != 27) && (numberOfSubjectsEntered != MAXSUBJECTS));
+    do {
+        city = inputCityFromConsole();
+    } while (_getch() != 27);
+    do {
+        enterprise = inputEnterpriseFromConsole();
+    } while (_getch() != 27);
+}
