@@ -89,11 +89,14 @@ void outputCountryToConsole(Country* pointerCountry);
 void outputSubjectToConsole(Subject* pointerSubject);
 void outputCityToConsole(City* pointerCity);
 void outputEnterpriseToConsole(Enterprise* pointerEnterprise);
-void СontinentTableHeader();
-void CountryTableHeader();
-void SubjectTableHeader();
-void CityTableHeader();
-void EnterpriseTableHeader();
+void continentTableHeader();
+void countryTableHeader();
+void subjectTableHeader();
+void cityTableHeader();
+void enterpriseTableHeader();
+int calculatingProfitsFromEnterprises(Country* pointerCountry);
+void comparisonOfTwoCountries(Country* firstCountry, Country* secondCountry);
+int calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(int a, int b);
 
 
 void deletingNewlineTransitionCharacter(char* line);
@@ -116,7 +119,7 @@ int main()
     SetConsoleOutputCP(1251);
     setlocale(LC_ALL, "Rus");
     inputAllStructures(listOfContinents);
-    СontinentTableHeader();
+    continentTableHeader();
     outputContinentToConsole(listOfContinents[0]);
 }
 
@@ -329,7 +332,7 @@ struct Сontinent inputСontinentFromConsole() {
     }
     while (getchar() != '\n');
     length = strlen(name);
-    theContinent.nameOfContinent = (char*)calloc(length, sizeof(char));
+    realloc(theContinent.nameOfContinent, length * sizeof(char));
     strcpy(theContinent.nameOfContinent, name);
     theContinent.numberOfCountries = number;
     theContinent.squareOfContinent = square;
@@ -584,6 +587,7 @@ void inputAllStructures(Сontinent continents[]) {
                     puts("Для завершения ввода стран нажмите Esc.");
                     puts("Для продолжения любую другую клавишу.\n");
                 }
+                (continents[i].listOfCountries + j)->netProfitCountryEnterprises = calculatingProfitsFromEnterprises(continents[i].listOfCountries + j);
                 j++;
             } while ((_getch() != 27) && (numberOfCountriesEntered != MAXCOUNTRIES));
             if (numberOfContinentsEntered == MAXCONTINENTS)
@@ -658,28 +662,125 @@ void outputEnterpriseToConsole(Enterprise* pointerEnterprise) {
 }
 
 
-void СontinentTableHeader() {
+void continentTableHeader() {
     printf("***********************************************************************************************\n");
     printf("*     Континент      * Количество стран * Площадь континента *          Список стран          *\n");
     printf("***********************************************************************************************\n");
 }
-void CountryTableHeader() {
+void countryTableHeader() {
     printf("**********************************************************************************************************************************************************************************\n");
     printf("*       Страна       * Количество субъектов * Площадь страны * Население * Прибыль предприятий *   Доходы   *   Расходы   * Профицит/дефицит бюджета *      Список субъектов     *\n");
     printf("**********************************************************************************************************************************************************************************\n");
 }
-void SubjectTableHeader() {
+void subjectTableHeader() {
     printf("*********************************************************************************************************\n");
     printf("*       Субъект      * Количество городов * Площадь субъекта * Население *        Список городов        *\n");
     printf("*********************************************************************************************************\n");
 }
-void CityTableHeader() {
+void cityTableHeader() {
     printf("**************************************************************************************************\n");
     printf("*       Город        * Количество предприятий * Население *          Список предприятий          *\n");
     printf("**************************************************************************************************\n");
 }
-void EnterpriseTableHeader() {
+void enterpriseTableHeader() {
     printf("*********************************************************************************************************************************************************\n");
     printf("*       Предприятие       *                  Местоположение                 *   Оборот за год   *    Прибыль    *        Отрасль       * Дата основания *\n");
     printf("*********************************************************************************************************************************************************\n");
+}
+
+
+
+int calculatingProfitsFromEnterprises(Country* pointerCountry) {
+    int i, j, k;
+    int numberOfProfit = 0;
+    i = 0;
+    while (((pointerCountry->listOfSubjects + i)->nameOfSubject != NULL) && (i < pointerCountry->numberOfSubjects)) {
+        j = 0;
+        while ((((pointerCountry->listOfSubjects + i)->listOfCities + j)->nameOfCity != NULL) && (j < (pointerCountry->listOfSubjects + i)->numberOfCities)) {
+            k = 0;
+            while (((((pointerCountry->listOfSubjects + i)->listOfCities + j)->listOfEnterprises + k)->nameOfEnterprise != NULL) && (((pointerCountry->listOfSubjects + i)->listOfCities) + j)->numberOfEnterprises) {
+                numberOfProfit += (((pointerCountry->listOfSubjects + i)->listOfCities + j)->listOfEnterprises + k)->netProfitOfEnterprise;
+                k++;
+            }
+            j++;
+        }
+        i++;
+    }
+    return numberOfProfit;
+}
+
+
+
+void comparisonOfTwoCountries(Country* firstCountry, Country* secondCountry) {
+    int percentageOfSquare;
+    int percentageOfPopulation;
+    int percentageOfProfits;
+    int percentageOfIncome;
+    int percentageOfExpenses;
+    puts("СРАВНЕНИЕ ДВУХ СТРАН");
+    countryTableHeader();
+    outputCountryToConsole(firstCountry);
+    outputCountryToConsole(secondCountry);
+    puts("\nПроцентное соотношение характеристик стран");
+    printf("%s     %s\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry);
+    // Площадь
+    if (firstCountry->squareOfCountry > secondCountry->squareOfCountry) {
+        percentageOfSquare = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(firstCountry->squareOfCountry, secondCountry->squareOfCountry);
+        printf("Площадь страны - %s больше площади страны - %s на %d %%\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry, percentageOfSquare);
+    }
+    else if (firstCountry->squareOfCountry < secondCountry->squareOfCountry) {
+        percentageOfSquare = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(secondCountry->squareOfCountry, firstCountry->squareOfCountry);
+        printf("Площадь страны - %s больше площади страны - %s на %d %%\n", secondCountry->nameOfCountry, firstCountry->nameOfCountry, percentageOfSquare);
+    }
+    else
+        printf("Площади стран равны\n");
+    // Население
+    if (firstCountry->populationOfCountry > secondCountry->populationOfCountry) {
+        percentageOfPopulation = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(firstCountry->squareOfCountry, secondCountry->squareOfCountry);
+        printf("Населeние страны - %s больше населения страны - %s на %d %%\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry, percentageOfPopulation);
+    }
+    else  if (firstCountry->squareOfCountry < secondCountry->squareOfCountry) {
+        percentageOfPopulation = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(secondCountry->squareOfCountry, firstCountry->squareOfCountry);
+        printf("Населeние страны - %s больше населения страны - %s на %d %%\n", secondCountry->nameOfCountry, firstCountry->nameOfCountry, percentageOfPopulation);
+    }
+    else
+        printf("Население стран равно");
+    //Прибыль предприятий 
+    if (firstCountry->netProfitCountryEnterprises > secondCountry->netProfitCountryEnterprises) {
+        percentageOfProfits = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(firstCountry->netProfitCountryEnterprises, secondCountry->netProfitCountryEnterprises);
+        printf("Прибыль предприятий страны - %s больше прибыли предприятий страны - %s на %d %%\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry, percentageOfProfits);
+    }
+    else if (firstCountry->netProfitCountryEnterprises < secondCountry->netProfitCountryEnterprises) {
+        percentageOfProfits = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(secondCountry->netProfitCountryEnterprises, firstCountry->netProfitCountryEnterprises);
+        printf("Прибыль предприятий страны - %s больше прибыли предприятий страны - %s на %d %%\n", secondCountry->nameOfCountry, firstCountry->nameOfCountry, percentageOfProfits);
+    }
+    else printf("Прибыли предприятий стран равны\n");
+    // Доходы
+    if (firstCountry->incomeOfCountry > secondCountry->incomeOfCountry) {
+        percentageOfIncome = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(firstCountry->incomeOfCountry, secondCountry->incomeOfCountry);
+        printf("Доходы страны - %s больше доходов страны - %s на %d %%\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry, percentageOfIncome);
+    }
+    else if (firstCountry->incomeOfCountry < secondCountry->incomeOfCountry) {
+        percentageOfIncome = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(secondCountry->incomeOfCountry, firstCountry->incomeOfCountry);
+        printf("Доходы страны - %s больше доходов страны - %s на %d %%\n", secondCountry->nameOfCountry, firstCountry->nameOfCountry, percentageOfIncome);
+    }
+    else
+        printf("Доходы стран равны\n");
+    // Расходы
+    if (firstCountry->expensesOfCountry > secondCountry->expensesOfCountry) {
+        percentageOfExpenses = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(firstCountry->expensesOfCountry, secondCountry->expensesOfCountry);
+        printf("Расходы страны - %s больше доходов страны - %s на %d %%\n", firstCountry->nameOfCountry, secondCountry->nameOfCountry, percentageOfExpenses);
+    }
+    else if (firstCountry->expensesOfCountry < secondCountry->expensesOfCountry) {
+        percentageOfExpenses = calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(secondCountry->expensesOfCountry, firstCountry->expensesOfCountry);
+        printf("Расходы страны - %s больше доходов страны - %s на %d %%\n", secondCountry->nameOfCountry, firstCountry->nameOfCountry, percentageOfExpenses);
+    }
+    else
+        printf("Расходы стран равны\n");
+}
+
+int calculatingByHowManyPercentFirstNumberIsGreaterThanSecond(int a, int b) {
+    int result;
+    result = (a - b) / b * 100;
+    return result;
 }
